@@ -202,8 +202,20 @@
         </div>
     </div>
 
-    <!-- jsPDF para generar PDF en el cliente -->
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <!-- jsPDF (sin SRI) + cache-buster y fallback -->
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js?v=20250825-1"></script>
+    <script>
+      (function ensureJsPDF(){
+        function hasJsPDF(){ return !!(window.jspdf && window.jspdf.jsPDF); }
+        if (hasJsPDF()) return;
+        var s = document.createElement('script');
+        s.src = 'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
+        s.async = true;
+        s.onload = function(){ if (!hasJsPDF()) console.error('jsPDF no se cargó correctamente.'); };
+        s.onerror = function(){ console.error('Fallo al cargar jsPDF desde CDN alterno.'); };
+        document.head.appendChild(s);
+      })();
+    </script>
 
     <script>
         // URL del Web App de Google Apps Script
@@ -270,8 +282,11 @@
 
         // Genera un PDF simple con jsPDF y retorna { filename, base64 }
         function generatePdf(data) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            const jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+            if (!jsPDFCtor) {
+                throw new Error('jsPDF no está disponible aún. Recargue la página (Ctrl+F5).');
+            }
+            const doc = new jsPDFCtor({ unit: 'pt', format: 'a4' });
 
             const margin = 48;
             let y = margin;
@@ -350,12 +365,17 @@
             if (!data.complete) { showMissingAlert(data.selections); return; }
             if (!SCRIPT_URL) { alert('Falta configurar la URL del Web App de Google.'); return; }
 
-            // Generar PDF local y enviarlo en base64 al servidor
-            const pdf = generatePdf(data);
-            triggerDownload(pdf.filename, pdf.dataUri); // Descarga local inmediata
-
-            const payload = { ...data, generatePdf: true, pdfFilename: pdf.filename, pdfBase64: pdf.base64 };
-            sendToAppsScript(payload);
+            try {
+              const pdf = generatePdf(data);
+              triggerDownload(pdf.filename, pdf.dataUri); // Descarga local inmediata
+              const payload = { ...data, generatePdf: true, pdfFilename: pdf.filename, pdfBase64: pdf.base64 };
+              sendToAppsScript(payload);
+            } catch (e) {
+              const statusMsg = document.getElementById('statusMsg');
+              statusMsg.style.color = '#c62828';
+              statusMsg.textContent = 'No se pudo generar el PDF (jsPDF). Actualice la página (Ctrl+F5).';
+              console.error(e);
+            }
         });
 
         // Inicializa feedback
