@@ -339,7 +339,7 @@
 
     <script>
         // URL del Web App de Google Apps Script (reemplazar más adelante)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_LbzQdwPUHRrwskjkhqYzHmKSlEO6qQSwzQTku3Vnc5c6iCC80kTTtAeqbp1h0Rcksw/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_LbzQdwPUHRrwskjkhqYzHmKSlEO6qQSwzQTku3Vnc5c6iCC80kTTtAeqbp1h0Rcksw/exec';
 
         function calculateScore() {
             const form = document.getElementById('rubricForm');
@@ -423,7 +423,7 @@
                 alert('Faltan criterios por seleccionar (5 en total).');
                 return;
             }
-            if (!SCRIPT_URL) {
+            if (!SCRIPT_URL || SCRIPT_URL.startsWith('PASTE_')) {
                 alert('Aún no se configuró el Web App de Google Apps Script. Reemplace SCRIPT_URL.');
                 return;
             }
