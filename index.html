@@ -243,7 +243,7 @@
                 <thead>
                     <tr>
                         <th>Criterio</th>
-                        <th>Excelente (4)</th>
+                        <th>Excelente (4)"></th>
                         <th>Satisfactorio (3)</th>
                         <th>Mejorable (2)</th>
                         <th>Deficiente (1)</th>
@@ -339,7 +339,7 @@
 
     <script>
         // URL del Web App de Google Apps Script (reemplazar más adelante)
-        const SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_LbzQdwPUHRrwskjkhqYzHmKSlEO6qQSwzQTku3Vnc5c6iCC80kTTtAeqbp1h0Rcksw/exec';
 
         function calculateScore() {
             const form = document.getElementById('rubricForm');
@@ -423,7 +423,7 @@
                 alert('Faltan criterios por seleccionar (5 en total).');
                 return;
             }
-            if (!SCRIPT_URL || SCRIPT_URL.startsWith('PASTE_')) {
+            if (!SCRIPT_URL) {
                 alert('Aún no se configuró el Web App de Google Apps Script. Reemplace SCRIPT_URL.');
                 return;
             }
