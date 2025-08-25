@@ -338,37 +338,39 @@
     </div>
 
     <script>
-        // URL del Web App de Google Apps Script (reemplazar más adelante)
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_LbzQdwPUHRrwskjkhqYzHmKSlEO6qQSwzQTku3Vnc5c6iCC80kTTtAeqbp1h0Rcksw/exec';
+        // URL del Web App de Google Apps Script
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_LbzQdwPUHRrwskjkhqYzHmKSlEO6qQSwzQTku3Vnc5c6iCC80kTTtAeqbp1h0Rcksw/exec';
+
+        function getSelectedValue(groupOrElement) {
+            if (!groupOrElement) return null;
+            const list = (typeof groupOrElement.length === 'number')
+                ? Array.from(groupOrElement)
+                : [groupOrElement];
+            const checked = list.find(el => el && el.checked);
+            return checked ? parseInt(checked.value) : null;
+        }
 
         function calculateScore() {
             const form = document.getElementById('rubricForm');
             const criteriaCount = 5;
             let totalScore = 0;
-            let selectionsMade = 0;
             const selections = [];
 
             for (let i = 1; i <= criteriaCount; i++) {
                 const radios = form.elements['criterio' + i];
-                let selected = null;
-                for (const radio of radios) {
-                    if (radio.checked) {
-                        selected = parseInt(radio.value);
-                        totalScore += selected;
-                        selectionsMade++;
-                        break;
-                    }
-                }
+                const selected = getSelectedValue(radios);
                 selections.push(selected);
+                if (selected != null) totalScore += selected;
             }
 
             const maxScore = criteriaCount * 4;
             const percentage = (totalScore / maxScore) * 100;
-            return { totalScore, percentage, selections, selectionsMade, criteriaCount };
+            const complete = selections.every(v => v != null);
+            return { totalScore, percentage, selections, complete, criteriaCount };
         }
 
         function collectRubricData() {
-            const { totalScore, percentage, selections, selectionsMade, criteriaCount } = calculateScore();
+            const { totalScore, percentage, selections, complete, criteriaCount } = calculateScore();
             return {
                 resident: document.getElementById('resident').value.trim(),
                 evalDate: document.getElementById('evalDate').value,
@@ -378,17 +380,27 @@
                 selections,
                 totalScore,
                 percentage: Math.round(percentage),
-                complete: selectionsMade === criteriaCount,
+                complete,
                 timestamp: new Date().toISOString()
             };
+        }
+
+        function showMissingAlert(selections) {
+            const missing = selections
+                .map((v, idx) => v == null ? (idx + 1) : null)
+                .filter(Boolean)
+                .join(', ');
+            if (missing) {
+                alert(`Falta seleccionar los criterios: ${missing} (son 5 en total).`);
+            }
         }
 
         document.getElementById('calculateBtn').addEventListener('click', function(event) {
             event.preventDefault();
             const resultDiv = document.getElementById('result');
-            const { percentage, complete } = calculateScore();
+            const { percentage, complete, selections } = calculateScore();
             if (!complete) {
-                alert('Por favor, seleccione una opción para cada uno de los 5 criterios antes de calcular la nota.');
+                showMissingAlert(selections);
                 resultDiv.textContent = '';
                 return;
             }
@@ -401,11 +413,10 @@
             statusMsg.textContent = 'Enviando datos...';
 
             try {
-                // Usamos x-www-form-urlencoded para evitar preflight CORS
                 const body = new URLSearchParams({ payload: JSON.stringify(payload) });
-                const resp = await fetch(SCRIPT_URL, {
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Nota: la respuesta será opaca; el servidor guardará los datos.
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
                     body
                 });
@@ -420,14 +431,13 @@
         document.getElementById('saveBtn').addEventListener('click', function() {
             const data = collectRubricData();
             if (!data.complete) {
-                alert('Faltan criterios por seleccionar (5 en total).');
+                showMissingAlert(data.selections);
                 return;
             }
-            if (!SCRIPT_URL || SCRIPT_URL.startsWith('PASTE_')) {
+            if (!SCRIPT_URL) {
                 alert('Aún no se configuró el Web App de Google Apps Script. Reemplace SCRIPT_URL.');
                 return;
             }
-            // Enviar
             sendToAppsScript(data);
         });
     </script>
